@@ -652,6 +652,7 @@ fn track_row(app: &mut SoundApp, ui: &mut Ui, id: TrackId, row: Rect, tl: Rect) 
         draw_clip(app, &painter, &s, &track, clip, tl, lane, auto_view.is_some());
     }
     crate::video_track::draw_lane(app, &painter, &s, &track, tl, lane);
+    crate::recording_preview::draw(app, &painter, &s, &track, tl, lane);
     if let Some(p) = &auto_view {
         draw_automation(&painter, &s, &track, p, tl, lane);
     }

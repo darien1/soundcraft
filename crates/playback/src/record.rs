@@ -7,6 +7,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
+#[path = "record_preview.rs"]
+mod preview;
+
 /// Captured audio: planar f32 at `sample_rate`.
 #[derive(Debug, Clone, Default)]
 pub struct Take {
@@ -117,6 +120,13 @@ impl Recorder {
     /// Samples captured so far (per channel).
     pub fn captured_frames(&self) -> usize {
         self.shared.data.try_lock().map_or(0, |d| d.len() / self.channels.max(1))
+    }
+
+    /// Copy the next small block for a visual preview without consuming the take.
+    /// Allocation happens before locking. Contention simply skips this UI frame;
+    /// the audio callback retains its existing nonblocking capture path.
+    pub fn read_preview(&self, from_frame: usize, out: &mut Vec<f32>) -> bool {
+        preview::read(&self.shared.data, self.channels, from_frame, out)
     }
 }
 

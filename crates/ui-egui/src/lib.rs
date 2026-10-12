@@ -17,6 +17,8 @@ pub mod mix_window;
 pub mod ops_windows;
 pub mod palette;
 pub mod panels;
+mod recording_data;
+mod recording_preview;
 pub mod score_editor;
 pub mod shortcuts;
 pub mod theme;
@@ -198,6 +200,8 @@ pub struct SoundApp {
     /// Input capture, opened on first record.
     pub recorder: Option<soundcraft_playback::record::Recorder>,
     record_start: Samples,
+    recording_waveform: recording_data::LiveWaveform,
+    recording_scratch: Vec<f32>,
     /// Punch range to trim the take to (pre/post-roll recordings).
     punch: Option<Range>,
     recorder_failed: bool,
@@ -260,6 +264,8 @@ impl SoundApp {
             player,
             recorder: None,
             record_start: 0,
+            recording_waveform: recording_data::LiveWaveform::default(),
+            recording_scratch: Vec::new(),
             punch: None,
             recorder_failed: false,
             ui: UiState::default(),
@@ -410,6 +416,8 @@ impl SoundApp {
             p.set_recording(true);
         }
         let already_playing = self.is_playing();
+        self.recording_waveform = recording_data::LiveWaveform::default();
+        self.recording_scratch.clear();
         if let Some(r) = &self.recorder {
             r.arm();
         }
@@ -524,6 +532,8 @@ impl SoundApp {
 
     fn finish_recording(&mut self) {
         self.engine.transport.recording = false;
+        self.recording_waveform = recording_data::LiveWaveform::default();
+        self.recording_scratch.clear();
         if let Some(p) = &self.player {
             p.set_recording(false);
         }
@@ -570,6 +580,21 @@ impl SoundApp {
                 self.ui.status = format!("Recorded {} clip(s)", ids.len());
             }
             Err(e) => self.ui.status = e.to_string(),
+        }
+    }
+
+    /// Incrementally summarize the capture on the UI thread. Each lock holds at most
+    /// 65,536 samples; work per frame is bounded even after a stalled or hidden window.
+    fn update_recording_preview(&mut self) {
+        if !self.engine.transport.recording {
+            return;
+        }
+        let Some(recorder) = &self.recorder else { return };
+        for _ in 0..8 {
+            if !recorder.read_preview(self.recording_waveform.frames, &mut self.recording_scratch) || self.recording_scratch.is_empty() {
+                break;
+            }
+            self.recording_waveform.append(&self.recording_scratch, recorder.channels, recorder.sample_rate);
         }
     }
 
@@ -782,6 +807,7 @@ impl SoundApp {
         }
         // Stop the old playback before sending a replacement session to the audio thread.
         self.handle_transport(dt);
+        self.update_recording_preview();
         if self.engine.revision != self.last_rev {
             self.last_rev = self.engine.revision;
             if let Some(p) = &self.player {
@@ -796,7 +822,12 @@ impl SoundApp {
         {
             self.ensure_input();
         }
-        if self.is_playing() || self.meters.values().any(|m| m.level[0] > 0.0001) || !self.pending_shots.is_empty() || !self.synthetic.is_empty() {
+        if self.is_playing()
+            || self.engine.transport.recording
+            || self.meters.values().any(|m| m.level[0] > 0.0001)
+            || !self.pending_shots.is_empty()
+            || !self.synthetic.is_empty()
+        {
             ctx.request_repaint();
         }
         control::collect_screenshots(self, ctx);

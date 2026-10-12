@@ -1,11 +1,10 @@
-<p align="center">
-  <a href="https://getartcraft.com/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/brand/artcraft-logo-white.svg">
-      <img alt="ArtCraft" src="docs/brand/artcraft-logo.svg" width="200">
-    </picture>
-  </a>
-</p>
+# SoundCraft Live Waveform (personal custom build)
+
+Based on SoundCraft 0.5.0 by the ArtCraft team. This fork adds a growing live waveform while recording. It is independently modified and is not an official ArtCraft release. The original license and contributor credits are preserved; the restricted brand artwork is removed.
+
+Windows builds are available from this fork's Actions tab under **SoundCraft Live Waveform - Windows**. Extract the downloaded ZIP and open **SoundCraft Live Waveform.exe**. Record-enable an audio track in the Edit window and start recording. Full microphone and graphical verification remains pending until the build runs locally.
+
+---
 
 <h1 align="center">SoundCraft</h1>
 
@@ -369,7 +368,3 @@ Forks and modified versions must remove them.
 
 <sub>Adobe, Photoshop, Illustrator, Premiere Pro, Lightroom, Acrobat, After Effects and InDesign are trademarks or registered trademarks of Adobe Inc. in the United States and/or other countries. SoundCraft is an independent, open-source project and is not affiliated with, sponsored by or endorsed by Adobe Inc.; these names are used only to describe the workflows it is compatible with.</sub>
 
-<p align="center">
-  <a href="https://getartcraft.com/"><img alt="ArtCraft" src="docs/brand/artcraft-mark.svg" width="28"></a><br>
-  <sub>Made by the <a href="https://getartcraft.com/">ArtCraft</a> team and community.</sub>
-</p>

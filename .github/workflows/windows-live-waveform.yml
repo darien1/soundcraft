@@ -1,0 +1,67 @@
+name: SoundCraft Live Waveform - Windows
+
+on:
+  push:
+    branches: [soundcraft-live-waveform]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-waveform-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Check out custom source
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+      - name: Format custom source
+        run: cargo fmt --all
+      - name: Check nonblocking capture preview
+        run: cargo test --locked -j 2 -p soundcraft-playback preview_
+      - name: Check waveform and timeline mapping
+        run: cargo test --locked -j 2 -p soundcraft-ui-egui recording_data::tests
+      - name: Build Windows app
+        run: cargo build --locked --release -j 2 -p soundcraft
+      - name: Package separate portable app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $folder = 'dist/SoundCraft Live Waveform'
+          New-Item -ItemType Directory -Path $folder -Force | Out-Null
+          Copy-Item -LiteralPath 'target/release/soundcraft.exe' -Destination "$folder/SoundCraft Live Waveform.exe"
+          foreach ($license in @('LICENSE-MIT', 'LICENSE-APACHE', 'NOTICE', 'ATTRIBUTION.md')) {
+            Copy-Item -LiteralPath $license -Destination $folder
+          }
+          @'
+          Personal SoundCraft 0.5.0 build with a live recording waveform preview.
+          Extract this folder and open SoundCraft Live Waveform.exe.
+          In the Edit window, record-enable an audio track and start recording.
+          The waveform should grow in the red REC region; stop to create the clip.
+          This is a custom unsigned build, separate from your official installation.
+          Automated capture and waveform data checks passed before packaging.
+          Microphone recording and the complete graphical app still need testing.
+          '@ | Set-Content -LiteralPath "$folder/READ ME.txt" -Encoding utf8
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath "$folder/SoundCraft Live Waveform.exe").Hash
+          "$hash  SoundCraft Live Waveform.exe" | Set-Content -LiteralPath "$folder/SHA256.txt" -Encoding ascii
+          Compress-Archive -LiteralPath $folder -DestinationPath 'dist/SoundCraft-Live-Waveform-windows-x64.zip'
+      - name: Save downloadable Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoundCraft-Live-Waveform-Windows-x64
+          path: dist/SoundCraft-Live-Waveform-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 14
