@@ -294,6 +294,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&d);
     }
 
+    #[cfg(unix)]
     #[test]
     fn a_real_library_without_the_vst3_export_is_rejected() {
         // A system library loads fine but has no `GetPluginFactory`.
@@ -317,3 +318,4 @@ mod tests {
         let _ = std::fs::remove_dir_all(&d);
     }
 }
+
