@@ -101,10 +101,12 @@ mod tests {
         let mut app = SoundApp::new(engine, None, crate::Services::default());
         app.recorder_failed = true;
         app.engine.transport.recording = true;
-        let data: Vec<f32> = (0..48_000 * 3).flat_map(|i| {
-            let signal = (i as f32 * 0.04).sin() * (0.2 + 0.6 * (i as f32 * 0.0001).sin().abs());
-            [signal, signal * 0.5]
-        }).collect();
+        let data: Vec<f32> = (0..48_000 * 3)
+            .flat_map(|i| {
+                let signal = (i as f32 * 0.04).sin() * (0.2 + 0.6 * (i as f32 * 0.0001).sin().abs());
+                [signal, signal * 0.5]
+            })
+            .collect();
         app.recording_waveform.append(&data, 2, 48_000);
         let mut harness = egui_kittest::Harness::builder().with_size(egui::vec2(1200.0, 700.0)).wgpu().build_ui_state(
             |ui, app: &mut SoundApp| {

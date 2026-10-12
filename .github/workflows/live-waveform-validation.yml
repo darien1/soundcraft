@@ -27,6 +27,8 @@ jobs:
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
       - name: Format custom source
         shell: pwsh
         run: |
@@ -48,4 +50,3 @@ jobs:
             ${{ runner.temp }}/source-format.patch
           if-no-files-found: warn
           retention-days: 14
-

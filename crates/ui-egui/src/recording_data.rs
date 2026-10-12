@@ -22,10 +22,10 @@ impl Envelope {
             self.levels.push(Vec::new());
         }
         for sample in samples {
-            if self.frames.is_multiple_of(BLOCK) {
-                if let Some(level) = self.levels.first_mut() {
-                    level.push(EMPTY);
-                }
+            if self.frames.is_multiple_of(BLOCK)
+                && let Some(level) = self.levels.first_mut()
+            {
+                level.push(EMPTY);
             }
             if sample.is_finite()
                 && let Some(bin) = self.levels.first_mut().and_then(|level| level.last_mut())
@@ -200,8 +200,8 @@ mod tests {
         for a in (0..data.len()).step_by(997) {
             for length in [1, 129, 1024, 23_000, 200_000] {
                 let b = (a + length).min(data.len());
-                let truth = data[a / BLOCK * BLOCK..(b.div_ceil(BLOCK) * BLOCK).min(data.len())]
-                    .iter().copied().fold(EMPTY, |acc, s| merge(acc, (s, s)));
+                let truth =
+                    data[a / BLOCK * BLOCK..(b.div_ceil(BLOCK) * BLOCK).min(data.len())].iter().copied().fold(EMPTY, |acc, s| merge(acc, (s, s)));
                 assert_eq!(envelope.minmax(a, b), truth);
             }
         }
