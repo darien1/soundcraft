@@ -1,0 +1,51 @@
+name: SoundCraft Live Waveform - Validation
+
+on:
+  push:
+    branches: [soundcraft-waveform-validation]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-waveform-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Format custom source
+        shell: pwsh
+        run: |
+          cargo fmt --all
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --binary --output="$env:RUNNER_TEMP/source-format.patch"
+      - name: Check repository quality gates and render preview
+        shell: pwsh
+        run: |
+          $env:SOUNDCRAFT_PREVIEW_SHOT = Join-Path $env:RUNNER_TEMP 'live-waveform-preview.png'
+          cargo xtask ci
+      - name: Save validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoundCraft-Live-Waveform-Validation
+          path: |
+            ${{ runner.temp }}/live-waveform-preview.png
+            ${{ runner.temp }}/source-format.patch
+          if-no-files-found: warn
+          retention-days: 14
+
